@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UNSPOKEN</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+html,body{margin:0;padding:0;background:#0d0515;overflow-x:hidden}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0) rotate(0deg)}20%{opacity:.6}100%{opacity:0;transform:translateY(-100vh) rotate(45deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes seatReveal{0%{opacity:0;transform:translateX(-20px) scale(.9)}60%{transform:translateX(4px) scale(1.02)}100%{opacity:1;transform:translateX(0) scale(1)}}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 20px rgba(255,107,129,.2)}50%{box-shadow:0 0 40px rgba(255,107,129,.5)}}
+@keyframes optionPop{0%{transform:scale(1)}50%{transform:scale(.96)}100%{transform:scale(1)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;padding:12px 16px;border-radius:12px;font-size:16px;width:100%;outline:none;transition:border-color .2s,background .2s;font-family:inherit}
+input:focus{border-color:rgba(255,107,129,.6);background:rgba(255,255,255,.12)}
+input::placeholder{color:rgba(255,255,255,.3)}
+input[type="number"]{-moz-appearance:textfield}
+input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type="range"]{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;padding:0;background:linear-gradient(90deg,#c084fc,#5f7cff);border:none;outline:none;cursor:pointer}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const COLORS_M = ["#5f7cff","#38bdf8","#45d9a8","#a3e635","#ffc048"];
+const COLORS_F = ["#ff6b81","#f472b6","#c084fc","#ff8a5c","#fb923c"];
+
+const PRESET_QUESTIONS = [
+  { text: "デートするなら？", optionA: "おうちでまったり", optionB: "外でアクティブに" },
+  { text: "恋人との連絡頻度は？", optionA: "毎日こまめに", optionB: "用がある時だけ" },
+  { text: "好きになるきっかけは？", optionA: "見た目にドキッ", optionB: "性格にジワジワ" },
+  { text: "告白するなら？", optionA: "自分からしたい", optionB: "されるのを待ちたい" },
+  { text: "恋人に求めるのは？", optionA: "一緒にいて安心", optionB: "一緒にいてドキドキ" },
+  { text: "ケンカしたら？", optionA: "すぐ話し合いたい", optionB: "少し距離を置きたい" },
+  { text: "旅行に行くなら？", optionA: "国内温泉でゆっくり", optionB: "海外でワクワク" },
+  { text: "好きな人ができたら？", optionA: "友達に即相談", optionB: "秘密にしておく" },
+  { text: "理想の休日は？", optionA: "2人きりで過ごす", optionB: "友達も一緒にワイワイ" },
+  { text: "記念日は？", optionA: "しっかりお祝いしたい", optionB: "特に気にしない" },
+  { text: "恋愛で大事なのは？", optionA: "フィーリング", optionB: "価値観の一致" },
+  { text: "好きなタイプは？", optionA: "甘えてくる人", optionB: "引っ張ってくれる人" },
+];
+
+function buildPairs(mAnswers, fAnswers, questions) {
+  const mN = mAnswers.length, fN = fAnswers.length;
+  const scores = Array.from({ length: mN }, () => Array(fN).fill(0));
+  for (let mi = 0; mi < mN; mi++) {
+    for (let fi = 0; fi < fN; fi++) {
+      let s = 0;
+      for (let qi = 0; qi < questions.length; qi++) {
+        const same = mAnswers[mi][qi] === fAnswers[fi][qi];
+        const mode = questions[qi].matchMode || "same";
+        if (mode === "same" ? same : !same) s++;
+      }
+      scores[mi][fi] = s;
+    }
+  }
+  const pairs = [];
+  const usedM = new Set(), usedF = new Set();
+  const pairCount = Math.min(mN, fN);
+  for (let p = 0; p < pairCount; p++) {
+    let bestS = -1;
+    let candidates = [];
+    for (let mi = 0; mi < mN; mi++) {
+      if (usedM.has(mi)) continue;
+      for (let fi = 0; fi < fN; fi++) {
+        if (usedF.has(fi)) continue;
+        if (scores[mi][fi] > bestS) { bestS = scores[mi][fi]; candidates = [{ mi, fi }]; }
+        else if (scores[mi][fi] === bestS) { candidates.push({ mi, fi }); }
+      }
+    }
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    pairs.push({ mIdx: pick.mi, fIdx: pick.fi, score: bestS });
+    usedM.add(pick.mi); usedF.add(pick.fi);
+  }
+  return pairs;
+}
+
+function Hearts({ count = 8 }) {
+  const h = Array.from({ length: count }, (_, i) => ({
+    id: i, left: Math.random() * 100, delay: Math.random() * 2.5,
+    size: 10 + Math.random() * 14, dur: 3.5 + Math.random() * 3,
+  }));
+  return (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
+      {h.map((x) => (<div key={x.id} style={{ position: "absolute", left: `${x.left}%`, bottom: "-30px", fontSize: x.size, animation: `floatUp ${x.dur}s ${x.delay}s ease-out infinite`, opacity: 0, color: "#ff6b81" }}>♥</div>))}
+    </div>
+  );
+}
+
+const Btn = ({ children, bg, onClick, disabled, style = {} }) => (
+  <button onClick={disabled ? undefined : onClick} style={{ border: "none", borderRadius: 16, color: "#fff", fontSize: 16, fontWeight: 600, cursor: disabled ? "default" : "pointer", fontFamily: "inherit", padding: "16px", width: "100%", background: bg, opacity: disabled ? 0.4 : 1, transition: "all 0.2s", ...style }}>{children}</button>
+);
+const Card = ({ children, style = {} }) => (
+  <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 20, padding: "28px 24px", border: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(20px)", ...style }}>{children}</div>
+);
+const GenderPill = ({ gender, count, color }) => {
+  if (count === 0) return null;
+  return <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: `${color}18`, borderRadius: 8, padding: "2px 8px", fontSize: 12, fontWeight: 700, color }}>{gender === "M" ? "♂" : "♀"}{count}</span>;
+};
+const Counter = ({ value, onChange, min = 1, max = 10, label }) => (
+  <div style={{ textAlign: "center" }}>
+    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 12, fontWeight: 600 }}>{label}</div>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <button onClick={() => onChange(Math.max(min, value - 1))} style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>−</button>
+      <div style={{ fontSize: 40, fontWeight: 700, width: 50, textAlign: "center" }}>{value}</div>
+      <button onClick={() => onChange(Math.min(max, value + 1))} style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>+</button>
+    </div>
+  </div>
+);
+
+function App() {
+  const [mode, setMode] = useState(null);
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #1a0a1e 0%, #2d1038 30%, #1a0825 60%, #0d0515 100%)", color: "#fff", fontFamily: "'Helvetica Neue','Hiragino Sans','Yu Gothic UI',sans-serif", position: "relative", overflow: "hidden" }}>
+      <Hearts count={mode === null ? 12 : 8} />
+      <div style={{ maxWidth: 440, margin: "0 auto", padding: "20px 20px 40px", position: "relative", zIndex: 1 }}>
+        <div style={{ textAlign: "center", padding: "24px 0 16px", animation: "fadeIn 0.6s ease" }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, background: "linear-gradient(135deg, #ff6b81, #ff9a76, #ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "0.12em" }}>UNSPOKEN</h1>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: "6px 0 0", letterSpacing: "0.12em" }}>between the lines</p>
+        </div>
+        {mode === null && (
+          <div style={{ animation: "slideUp 0.5s ease", display: "flex", flexDirection: "column", gap: 14 }}>
+            {[
+              { id: "seat", title: "MATCH", desc: "相性でペアを決める" },
+              { id: "secret", title: "SECRET", desc: "秘密の投票" },
+            ].map((m) => (
+              <button key={m.id} onClick={() => setMode(m.id)} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "28px 24px", cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.2s", color: "#fff" }}>
+                <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{m.title}</div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>{m.desc}</div>
+              </button>
+            ))}
+          </div>
+        )}
+        {mode === "seat" && <SeatFlow onBack={() => setMode(null)} />}
+        {mode === "secret" && <SecretFlow onBack={() => setMode(null)} />}
+        {mode === null && (
+          <div style={{ textAlign: "center", marginTop: 40, paddingTop: 16 }}>
+            <a href="https://github.com/327yuto" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", textDecoration: "none", letterSpacing: "0.05em" }}>by @327yuto</a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SeatFlow({ onBack }) {
+  const [step, setStep] = useState("count");
+  const [mCount, setMCount] = useState(2);
+  const [fCount, setFCount] = useState(2);
+  const [questions, setQuestions] = useState([]);
+  const [orderList, setOrderList] = useState([]);
+  const [curIdx, setCurIdx] = useState(0);
+  const [curQ, setCurQ] = useState(0);
+  const [allAnswers, setAllAnswers] = useState({});
+  const [curAnswers, setCurAnswers] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [showAgg, setShowAgg] = useState(false);
+  const [aggQ, setAggQ] = useState(-1);
+  const [pairs, setPairs] = useState([]);
+  const [revealedPair, setRevealedPair] = useState(-1);
+  const [presetSelected, setPresetSelected] = useState(new Set());
+  const [customPicks, setCustomPicks] = useState([{ text: "", optionA: "", optionB: "", matchMode: "same" }]);
+  const [justToggled, setJustToggled] = useState(false);
+
+  const total = mCount + fCount;
+  const curPerson = orderList[curIdx];
+  const personKey = (p) => `${p.g}${p.num}`;
+  const personLabel = (p) => `${p.g === "M" ? "男性" : "女性"}${p.num}`;
+  const personLabelShort = (p) => `${p.g === "M" ? "男" : "女"}${p.num}`;
+  const personColor = (p) => p.g === "M" ? COLORS_M[(p.num - 1) % COLORS_M.length] : COLORS_F[(p.num - 1) % COLORS_F.length];
+
+  const togglePreset = (idx) => {
+    const ns = new Set(presetSelected);
+    if (ns.has(idx)) ns.delete(idx); else ns.add(idx);
+    setPresetSelected(ns);
+    if (ns.size > 0) setJustToggled(true);
+  };
+  const autoApplyPresets = () => {
+    const picked = [...presetSelected].sort((a, b) => a - b).map((i) => ({ ...PRESET_QUESTIONS[i], matchMode: "same" }));
+    const customs = customPicks.filter((q) => q.text.trim() && q.optionA.trim() && q.optionB.trim());
+    setQuestions([...picked, ...customs]);
+    setJustToggled(false);
+    setStep("questions");
+  };
+  useEffect(() => {
+    if (step === "pickQ" && justToggled && presetSelected.size > 0) {
+      const t = setTimeout(() => autoApplyPresets(), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [justToggled, presetSelected]);
+  const addCustomPick = () => setCustomPicks([...customPicks, { text: "", optionA: "", optionB: "", matchMode: "same" }]);
+  const rmCustomPick = (i) => setCustomPicks(customPicks.filter((_, j) => j !== i));
+  const upCustomPick = (i, f, v) => { const c = [...customPicks]; c[i] = { ...c[i], [f]: v }; setCustomPicks(c); };
+  const hasAnySelection = presetSelected.size > 0 || customPicks.some((q) => q.text.trim() && q.optionA.trim() && q.optionB.trim());
+  const addCustomQ = () => setQuestions([...questions, { text: "", optionA: "", optionB: "", matchMode: "same" }]);
+  const rmQ = (i) => setQuestions(questions.filter((_, j) => j !== i));
+  const upQ = (i, f, v) => { const q = [...questions]; q[i] = { ...q[i], [f]: v }; setQuestions(q); };
+  const validQ = questions.length > 0 && questions.every((q) => q.text.trim() && q.optionA.trim() && q.optionB.trim());
+
+  const goToAssign = () => {
+    const ol = [];
+    for (let i = 1; i <= mCount; i++) ol.push({ g: "M", num: i });
+    for (let i = 1; i <= fCount; i++) ol.push({ g: "F", num: i });
+    setOrderList(ol); setAllAnswers({}); setCurIdx(0); setCurAnswers([]); setCurQ(0); setStep("assign");
+  };
+  const startAnswering = () => { setCurIdx(0); setCurQ(0); setCurAnswers([]); setAnswered(false); setSelected(null); setStep("callup"); };
+  const beginTurn = () => { setCurQ(0); setCurAnswers([]); setAnswered(false); setSelected(null); setStep("answering"); };
+
+  const choose = (opt) => {
+    if (answered) return;
+    setSelected(opt); setAnswered(true);
+    setTimeout(() => {
+      const na = [...curAnswers, opt]; setCurAnswers(na);
+      if (curQ < questions.length - 1) { setCurQ(curQ + 1); setAnswered(false); setSelected(null); }
+      else {
+        const key = personKey(orderList[curIdx]);
+        const newAll = { ...allAnswers, [key]: na }; setAllAnswers(newAll);
+        if (curIdx < orderList.length - 1) { setCurIdx(curIdx + 1); setCurAnswers([]); setCurQ(0); setAnswered(false); setSelected(null); setStep("callup"); }
+        else {
+          const mA = []; for (let i = 1; i <= mCount; i++) mA.push(newAll[`M${i}`] || []);
+          const fA = []; for (let i = 1; i <= fCount; i++) fA.push(newAll[`F${i}`] || []);
+          setPairs(buildPairs(mA, fA, questions)); setStep("aggregate"); setAggQ(-1); setShowAgg(false);
+        }
+      }
+    }, 500);
+  };
+
+  useEffect(() => { if (step === "aggregate" && !showAgg) { const t = setTimeout(() => { setShowAgg(true); setAggQ(0); }, 800); return () => clearTimeout(t); } }, [step, showAgg]);
+  const goPairs = () => { setStep("pairs"); setRevealedPair(-1); setTimeout(() => setRevealedPair(0), 800); };
+  useEffect(() => { if (step === "pairs" && revealedPair >= 0 && revealedPair < pairs.length - 1) { const t = setTimeout(() => setRevealedPair(revealedPair + 1), 1500); return () => clearTimeout(t); } }, [revealedPair, step]);
+  const reset = () => { setStep("count"); setMCount(2); setFCount(2); setQuestions([]); setAllAnswers({}); setPairs([]); setPresetSelected(new Set()); setCustomPicks([{ text: "", optionA: "", optionB: "", matchMode: "same" }]); };
+
+  if (step === "count") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card style={{ textAlign: "center" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 24px" }}>MATCH</h2>
+        <div style={{ display: "flex", gap: 24 }}>
+          <div style={{ flex: 1 }}><Counter label="♂ 男性" value={mCount} onChange={setMCount} /></div>
+          <div style={{ flex: 1 }}><Counter label="♀ 女性" value={fCount} onChange={setFCount} /></div>
+        </div>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 16 }}>計 {total} 人</p>
+      </Card>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={onBack} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={() => setStep("pickQ")} style={{ flex: 2 }}>次へ → 質問を選ぶ</Btn>
+      </div>
+    </div>
+  );
+
+  if (step === "pickQ") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card>
+        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px" }}>質問を選ぼう</h2>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 20px" }}>使いたい質問をタップ！</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {PRESET_QUESTIONS.map((q, i) => {
+            const on = presetSelected.has(i);
+            return (
+              <button key={i} onClick={() => togglePreset(i)} style={{ padding: "14px 16px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", color: "#fff", transition: "all 0.2s", fontSize: 14, background: on ? "rgba(255,107,129,0.15)" : "rgba(255,255,255,0.03)", border: on ? "1.5px solid rgba(255,107,129,0.5)" : "1.5px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div><div style={{ fontWeight: 600, marginBottom: 4 }}>{q.text}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>A. {q.optionA}　B. {q.optionB}</div></div>
+                  {on && <div style={{ color: "#ff6b81", fontSize: 18, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>✓</div>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>オリジナル質問</div>
+          {customPicks.map((cq, ci) => (
+            <div key={ci} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "14px", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 8 }}>
+              {customPicks.length > 1 && <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}><button onClick={() => rmCustomPick(ci)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>削除</button></div>}
+              <input value={cq.text} onChange={(e) => upCustomPick(ci, "text", e.target.value)} placeholder="質問を入力" style={{ marginBottom: 6, fontSize: 14 }} />
+              <div style={{ display: "flex", gap: 6 }}><input value={cq.optionA} onChange={(e) => upCustomPick(ci, "optionA", e.target.value)} placeholder="A" style={{ fontSize: 13 }} /><input value={cq.optionB} onChange={(e) => upCustomPick(ci, "optionB", e.target.value)} placeholder="B" style={{ fontSize: 13 }} /></div>
+            </div>
+          ))}
+          <button onClick={addCustomPick} style={{ width: "100%", padding: "8px", background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.12)", borderRadius: 10, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>+ もう1問追加</button>
+        </div>
+      </Card>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("count")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={autoApplyPresets} disabled={!hasAnySelection} style={{ flex: 2 }}>{presetSelected.size > 0 ? `${presetSelected.size}問選択中…` : hasAnySelection ? "次へ →" : "質問を選んでね"}</Btn>
+      </div>
+    </div>
+  );
+
+  if (step === "questions") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card>
+        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px" }}>質問の確認・編集</h2>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 20px" }}>ペアリング条件も設定できるよ！</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {questions.map((q, i) => (
+            <div key={i} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: "18px 16px", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}><span style={{ fontSize: 12, color: "rgba(255,107,129,0.8)", fontWeight: 600 }}>Q{i + 1}</span><button onClick={() => rmQ(i)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>削除</button></div>
+              <input value={q.text} onChange={(e) => upQ(i, "text", e.target.value)} placeholder="質問" style={{ marginBottom: 8 }} />
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <div style={{ flex: 1 }}><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4, paddingLeft: 4 }}>A</div><input value={q.optionA} onChange={(e) => upQ(i, "optionA", e.target.value)} placeholder="選択肢A" /></div>
+                <div style={{ flex: 1 }}><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4, paddingLeft: 4 }}>B</div><input value={q.optionB} onChange={(e) => upQ(i, "optionB", e.target.value)} placeholder="選択肢B" /></div>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[{ val: "same", label: "同じ回答でペア", icon: "🤝" }, { val: "opposite", label: "違う回答でペア", icon: "🔀" }].map((m) => (
+                  <button key={m.val} onClick={() => upQ(i, "matchMode", m.val)} style={{ flex: 1, padding: "8px 6px", borderRadius: 10, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none", transition: "all 0.2s", background: q.matchMode === m.val ? "rgba(255,107,129,0.2)" : "rgba(255,255,255,0.04)", color: q.matchMode === m.val ? "#ff8a9e" : "rgba(255,255,255,0.4)" }}>{m.icon} {m.label}</button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button onClick={addCustomQ} style={{ flex: 1, padding: "10px", background: "rgba(255,255,255,0.06)", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>+ 追加</button>
+          <button onClick={() => { setJustToggled(false); setPresetSelected(new Set()); setStep("pickQ"); }} style={{ flex: 1, padding: "10px", background: "rgba(255,255,255,0.06)", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>← 選び直す</button>
+        </div>
+      </Card>
+      <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={goToAssign} disabled={!validQ} style={{ marginTop: 20 }}>次へ → 番号決め</Btn>
+    </div>
+  );
+
+  if (step === "assign") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card style={{ textAlign: "center" }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 20px" }}>番号を決めよう！</h2>
+        <div style={{ background: "rgba(95,124,255,0.08)", border: "1px solid rgba(95,124,255,0.2)", borderRadius: 14, padding: "16px", marginBottom: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#5f7cff", marginBottom: 8 }}>♂ 男性チーム</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>男性同士で話し合って<br /><span style={{ fontWeight: 700, color: "#fff" }}>男性1 〜 男性{mCount}</span> の番号を決めてね</div>
+        </div>
+        <div style={{ background: "rgba(255,107,129,0.08)", border: "1px solid rgba(255,107,129,0.2)", borderRadius: 14, padding: "16px", marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#ff6b81", marginBottom: 8 }}>♀ 女性チーム</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>女性同士で話し合って<br /><span style={{ fontWeight: 700, color: "#fff" }}>女性1 〜 女性{fCount}</span> の番号を決めてね</div>
+        </div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>回答順は 男性1 → 男性{mCount} → 女性1 → 女性{fCount} の順です</div>
+      </Card>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("questions")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={startAnswering} style={{ flex: 2 }}>全員決まった！スタート</Btn>
+      </div>
+    </div>
+  );
+
+  if (step === "callup") {
+    const p = orderList[curIdx]; const c = personColor(p);
+    return (
+      <div style={{ animation: "scaleIn 0.5s ease", textAlign: "center", padding: "40px 20px" }}>
+        <div style={{ display: "flex", gap: 4, marginBottom: 32, justifyContent: "center", flexWrap: "wrap" }}>
+          {orderList.map((o, i) => (
+            <div key={i} style={{ width: 32, height: 28, borderRadius: 14, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", background: i < curIdx ? "rgba(255,255,255,0.15)" : i === curIdx ? personColor(o) : "rgba(255,255,255,0.06)", color: i === curIdx ? "#fff" : "rgba(255,255,255,0.3)", border: i === curIdx ? `2px solid ${personColor(o)}` : "2px solid transparent", transition: "all 0.3s" }}>{personLabelShort(o)}</div>
+          ))}
+        </div>
+        <div style={{ width: 110, height: 110, borderRadius: "50%", margin: "0 auto 20px", background: c, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: "#fff", boxShadow: `0 8px 32px ${c}88` }}>{personLabel(p)}</div>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 8px" }}><span style={{ color: c }}>{personLabel(p)}</span> の番だよ！</h2>
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 32px" }}>スマホを受け取って回答してね</p>
+        <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={beginTurn} style={{ width: "auto", padding: "18px 48px", boxShadow: "0 4px 24px rgba(255,71,87,0.4)" }}>回答スタート</Btn>
+      </div>
+    );
+  }
+
+  if (step === "answering") {
+    const q = questions[curQ];
+    return (
+      <div style={{ animation: "slideUp 0.4s ease" }}>
+        <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>{questions.map((_, i) => (<div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= curQ ? "linear-gradient(90deg,#ff6b81,#ff9a76)" : "rgba(255,255,255,0.1)" }} />))}</div>
+        <Card style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: "rgba(255,107,129,0.7)", fontWeight: 600, letterSpacing: "0.15em", marginBottom: 16, textTransform: "uppercase" }}>Q{curQ + 1} / {questions.length}</div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 32px", lineHeight: 1.5 }}>{q.text}</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {["A", "B"].map((opt) => {
+              const label = opt === "A" ? q.optionA : q.optionB;
+              const isSel = selected === opt; const isOth = answered && !isSel;
+              return (
+                <button key={opt} onClick={() => choose(opt)} style={{ padding: "20px 24px", background: isSel ? "linear-gradient(135deg,#ff6b81,#ff4757)" : isOth ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.06)", border: isSel ? "2px solid rgba(255,107,129,0.8)" : "2px solid rgba(255,255,255,0.08)", borderRadius: 16, color: isOth ? "rgba(255,255,255,0.3)" : "#fff", fontSize: 16, fontWeight: isSel ? 700 : 500, cursor: answered ? "default" : "pointer", fontFamily: "inherit", transition: "all 0.3s", animation: isSel ? "optionPop 0.3s ease" : "none", transform: isSel ? "scale(1.02)" : "scale(1)", boxShadow: isSel ? "0 4px 24px rgba(255,71,87,0.3)" : "none" }}>
+                  <span style={{ opacity: 0.5, marginRight: 8 }}>{opt}.</span>{label}
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (step === "aggregate") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <div style={{ textAlign: "center", marginBottom: 24 }}><h2 style={{ fontSize: 20, fontWeight: 700, background: "linear-gradient(135deg,#ff6b81,#ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>集計結果</h2></div>
+      {showAgg && questions.map((q, qi) => {
+        if (qi > aggQ) return null;
+        const allArr = orderList.map((p) => allAnswers[personKey(p)] || []);
+        const totalA = allArr.filter((a) => a[qi] === "A").length;
+        const totalB = allArr.filter((a) => a[qi] === "B").length;
+        const t = totalA + totalB;
+        const pA = t > 0 ? Math.round((totalA / t) * 100) : 0; const pB = 100 - pA;
+        const modeLabel = q.matchMode === "opposite" ? "🔀 違う回答でペア" : "🤝 同じ回答でペア";
+        return (
+          <div key={qi} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: "20px", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 12, animation: "scaleIn 0.5s ease" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: "rgba(255,107,129,0.7)", fontWeight: 600 }}>Q{qi + 1}</span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: 6 }}>{modeLabel}</span>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{q.text}</div>
+            <div style={{ display: "flex", gap: 2, height: 36, borderRadius: 10, overflow: "hidden", marginBottom: 12 }}>
+              <div style={{ width: `${pA}%`, background: "linear-gradient(90deg,#ff6b81,#ff8a9e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, minWidth: pA > 0 ? 40 : 0, transition: "width 1s ease" }}>{pA}%</div>
+              <div style={{ width: `${pB}%`, background: "linear-gradient(90deg,#5f7cff,#8b9eff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, minWidth: pB > 0 ? 40 : 0, transition: "width 1s ease" }}>{pB}%</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+              <span><span style={{ color: "#ff6b81" }}>A.</span> {q.optionA}</span>
+              <span><span style={{ color: "#5f7cff" }}>B.</span> {q.optionB}</span>
+            </div>
+          </div>
+        );
+      })}
+      {showAgg && <div style={{ marginTop: 20 }}>{aggQ < questions.length - 1 ? <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={() => setAggQ(aggQ + 1)}>次の結果 →</Btn> : <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={goPairs} style={{ boxShadow: "0 4px 24px rgba(255,71,87,0.4)" }}>♥ ペア発表 ♥</Btn>}</div>}
+    </div>
+  );
+
+  if (step === "pairs") {
+    const matchedM = new Set(pairs.map((p) => p.mIdx));
+    const matchedF = new Set(pairs.map((p) => p.fIdx));
+    const unmatchedM = Array.from({ length: mCount }, (_, i) => i).filter((i) => !matchedM.has(i));
+    const unmatchedF = Array.from({ length: fCount }, (_, i) => i).filter((i) => !matchedF.has(i));
+    const allRevealed = revealedPair >= pairs.length - 1;
+    return (
+      <div style={{ animation: "slideUp 0.5s ease" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, background: "linear-gradient(135deg,#ff6b81,#ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>♥ ペア発表</h2>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "4px 0 0" }}>相性で決まったペアは…？</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {pairs.map((p, i) => {
+            const vis = i <= revealedPair;
+            const mP = { g: "M", num: p.mIdx + 1 }; const fP = { g: "F", num: p.fIdx + 1 };
+            const mC = personColor(mP); const fC = personColor(fP);
+            const matchPct = questions.length > 0 ? Math.round((p.score / questions.length) * 100) : 0;
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, background: vis ? "rgba(255,255,255,0.04)" : "transparent", borderRadius: 18, padding: "20px", border: vis ? "1px solid rgba(255,255,255,0.08)" : "1px solid transparent", animation: vis ? "seatReveal 0.8s ease forwards" : "none", opacity: vis ? 1 : 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: "50%", background: mC, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, boxShadow: `0 4px 16px ${mC}55` }}>男性{mP.num}</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                  <div style={{ fontSize: 24 }}>♥</div>
+                  {matchPct > 0 && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>{matchPct}%</div>}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: "50%", background: fC, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, boxShadow: `0 4px 16px ${fC}55` }}>女性{fP.num}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {allRevealed && (unmatchedM.length > 0 || unmatchedF.length > 0) && (
+          <div style={{ marginTop: 16, animation: "fadeIn 0.5s ease" }}>
+            <div style={{ textAlign: "center", fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 8 }}>ペアなし</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+              {unmatchedM.map((mi) => (<div key={`m${mi}`} style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(95,124,255,0.15)", border: "1px dashed rgba(95,124,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>男性{mi+1}</div>))}
+              {unmatchedF.map((fi) => (<div key={`f${fi}`} style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,107,129,0.15)", border: "1px dashed rgba(255,107,129,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>女性{fi+1}</div>))}
+            </div>
+          </div>
+        )}
+        {allRevealed && (
+          <div style={{ marginTop: 24, textAlign: "center", animation: "fadeIn 0.8s ease" }}>
+            <div style={{ background: "rgba(255,107,129,0.06)", border: "1px solid rgba(255,107,129,0.12)", borderRadius: 16, padding: "18px 20px" }}>
+              <div style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>ペアになった人同士で<br /><span style={{ color: "#ff8a9e", fontWeight: 600 }}>お互いの回答についてお話してみよう ♥</span></div>
+            </div>
+            <Btn bg="rgba(255,255,255,0.06)" onClick={onBack} style={{ marginTop: 16, color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }}>トップに戻る</Btn>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
+}
+
+function SecretFlow({ onBack }) {
+  const [step, setStep] = useState("rules");
+  const [asker, setAsker] = useState("male");
+  const [mCount, setMCount] = useState(3);
+  const [fCount, setFCount] = useState(3);
+  const [questionText, setQuestionText] = useState("");
+  const [curPerson, setCurPerson] = useState(0);
+  const [allVotes, setAllVotes] = useState([]);
+  const [answered, setAnswered] = useState(false);
+  const [selectedNum, setSelectedNum] = useState(null);
+  const [numRevealed, setNumRevealed] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+
+  const askerLabel = asker === "male" ? "男性" : "女性";
+  const respLabel = asker === "male" ? "女性" : "男性";
+  const respCount = asker === "male" ? fCount : mCount;
+  const targetCount = asker === "male" ? mCount : fCount;
+  const targetLabel = askerLabel;
+  const respColor = (idx) => asker === "male" ? COLORS_F[idx % COLORS_F.length] : COLORS_M[idx % COLORS_M.length];
+  const targetColor = (idx) => asker === "male" ? COLORS_M[idx % COLORS_M.length] : COLORS_F[idx % COLORS_F.length];
+
+  const startAnswering = () => { setAllVotes([]); setCurPerson(0); setNumRevealed(false); setAnswered(false); setSelectedNum(null); setStep("shownum"); };
+  const beginTurn = () => { setAnswered(false); setSelectedNum(null); setStep("answering"); };
+  const submitVote = (num) => {
+    if (answered) return;
+    setSelectedNum(num); setAnswered(true);
+    setTimeout(() => {
+      const nv = [...allVotes, num]; setAllVotes(nv);
+      if (curPerson < respCount - 1) { setCurPerson(curPerson + 1); setNumRevealed(false); setAnswered(false); setSelectedNum(null); setStep("handoff"); }
+      else { setStep("result"); setShowResult(false); }
+    }, 600);
+  };
+
+  const SECRET_TEMPLATES = [
+    "一番タイプなのは？",
+    "一番遊んでそうなのは？",
+    "一番ギャップがありそうなのは？",
+    "一番甘え上手そうなのは？",
+    "付き合ったら一番楽しそうなのは？",
+    "もっと話したいのは？",
+  ];
+
+  if (step === "rules") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card>
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 4px" }}>SECRET</h2>
+        </div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.8, marginBottom: 16 }}>質問者が質問を作成 → 回答者が1人ずつ相手の番号を選んで回答 → 結果発表！</div>
+        <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,71,87,0.08)", border: "1px solid rgba(255,71,87,0.2)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}><span style={{ fontSize: 16 }}>⚠️</span><span style={{ fontSize: 13, fontWeight: 700, color: "#ff6b81" }}>大事なルール</span></div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>回答者は<span style={{ color: "#ff6b81", fontWeight: 700 }}>異性にバレないように</span>番号を確認してね！<br />誰が何番か知られたら、回答がバレちゃうよ</div>
+        </div>
+      </Card>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={onBack} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("role")} style={{ flex: 2 }}>OK！はじめる</Btn>
+      </div>
+    </div>
+  );
+
+  if (step === "role") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card style={{ textAlign: "center" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px" }}>質問を作るのはどっち？</h2>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 24px" }}>質問側が相手の番号を選ばせるよ</p>
+        <div style={{ display: "flex", gap: 10 }}>
+          {[{ val: "male", icon: "♂", label: "男性が質問", sub: "女性が回答", c: "#5f7cff" }, { val: "female", icon: "♀", label: "女性が質問", sub: "男性が回答", c: "#f472b6" }].map((r) => (
+            <button key={r.val} onClick={() => setAsker(r.val)} style={{ flex: 1, padding: "20px 12px", borderRadius: 16, cursor: "pointer", fontFamily: "inherit", textAlign: "center", color: "#fff", background: asker === r.val ? `${r.c}22` : "rgba(255,255,255,0.03)", border: asker === r.val ? `2px solid ${r.c}88` : "2px solid rgba(255,255,255,0.06)", transition: "all 0.2s" }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>{r.icon}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{r.label}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{r.sub}</div>
+            </button>
+          ))}
+        </div>
+      </Card>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("rules")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("count")} style={{ flex: 2 }}>次へ</Btn>
+      </div>
+    </div>
+  );
+
+  if (step === "count") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card style={{ textAlign: "center" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 24px" }}>参加人数</h2>
+        <div style={{ display: "flex", gap: 24 }}>
+          <div style={{ flex: 1 }}><Counter label="♂ 男性" value={mCount} onChange={setMCount} /></div>
+          <div style={{ flex: 1 }}><Counter label="♀ 女性" value={fCount} onChange={setFCount} /></div>
+        </div>
+      </Card>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("role")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("assign")} style={{ flex: 2 }}>次へ → 番号決め</Btn>
+      </div>
+    </div>
+  );
+
+  if (step === "assign") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card style={{ textAlign: "center" }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 20px" }}>番号を決めよう！</h2>
+        <div style={{ background: "rgba(95,124,255,0.08)", border: "1px solid rgba(95,124,255,0.2)", borderRadius: 14, padding: "16px", marginBottom: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#5f7cff", marginBottom: 8 }}>♂ 男性チーム</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>男性同士で話し合って<br /><span style={{ fontWeight: 700, color: "#fff" }}>女性に 1〜{fCount} の番号</span>をつけてね</div>
+        </div>
+        <div style={{ background: "rgba(255,107,129,0.08)", border: "1px solid rgba(255,107,129,0.2)", borderRadius: 14, padding: "16px", marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#ff6b81", marginBottom: 8 }}>♀ 女性チーム</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>女性同士で話し合って<br /><span style={{ fontWeight: 700, color: "#fff" }}>男性に 1〜{mCount} の番号</span>をつけてね</div>
+        </div>
+        <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", fontSize: 12, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>⚠️ 番号は異性には秘密！<br />自分たちのチーム内だけで共有してね</div>
+      </Card>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("count")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("question")} style={{ flex: 2 }}>全員決まった！</Btn>
+      </div>
+    </div>
+  );
+
+  if (step === "question") return (
+    <div style={{ animation: "slideUp 0.5s ease" }}>
+      <Card>
+        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px" }}>質問を設定</h2>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 4px" }}>{askerLabel}が質問を作ってね</p>
+        <p style={{ fontSize: 12, color: "rgba(255,71,87,0.7)", margin: "0 0 20px", fontWeight: 600 }}>⚠️ {respLabel}は画面を見ないで！</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+          {SECRET_TEMPLATES.map((t, i) => {
+            const on = questionText === t;
+            return (<button key={i} onClick={() => setQuestionText(t)} style={{ padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none", transition: "all 0.2s", background: on ? "rgba(192,132,252,0.25)" : "rgba(255,255,255,0.06)", color: on ? "#c9a0ff" : "rgba(255,255,255,0.5)" }}>{t}</button>);
+          })}
+        </div>
+        <input value={questionText} onChange={(e) => setQuestionText(e.target.value)} placeholder="または自由に入力" style={{ marginBottom: 12 }} />
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", lineHeight: 1.6, padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>{respLabel}は {askerLabel}の番号（1〜{targetCount}）から1つ選んで回答します</div>
+      </Card>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("assign")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={startAnswering} disabled={!questionText.trim()} style={{ flex: 2 }}>{respLabel}の回答スタート</Btn>
+      </div>
+    </div>
+  );
+
+  if (step === "handoff") return (
+    <div style={{ animation: "scaleIn 0.5s ease", textAlign: "center", padding: "48px 20px" }}>
+      <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 28px", background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, animation: "pulseGlow 2.5s ease-in-out infinite" }}>🔒</div>
+      <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px" }}>次の{respLabel}にスマホを渡してね</h2>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 12px" }}>{curPerson + 1} / {respCount} 人目</p>
+      <p style={{ fontSize: 12, color: "rgba(255,71,87,0.7)", margin: "0 0 28px", fontWeight: 600 }}>⚠️ {askerLabel}は見ないで！</p>
+      <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => { setNumRevealed(false); setStep("shownum"); }} style={{ width: "auto", padding: "18px 48px", boxShadow: "0 4px 24px rgba(168,85,247,0.4)" }}>受け取った</Btn>
+    </div>
+  );
+
+  if (step === "shownum") return (
+    <div style={{ animation: "scaleIn 0.5s ease", textAlign: "center", padding: "48px 20px" }}>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 24px" }}>{curPerson + 1} / {respCount} 人目</p>
+      {!numRevealed ? (
+        <div>
+          <div style={{ width: 100, height: 100, borderRadius: "50%", margin: "0 auto 24px", background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>🔒</div>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", margin: "0 0 12px", lineHeight: 1.7 }}>周りに見られていないことを確認！</p>
+          <p style={{ fontSize: 12, color: "rgba(255,71,87,0.7)", margin: "0 0 24px", fontWeight: 600 }}>特に{askerLabel}にはバレないように</p>
+          <Btn bg="rgba(255,255,255,0.08)" onClick={() => setNumRevealed(true)} style={{ width: "auto", padding: "14px 32px", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>確認して回答する</Btn>
+        </div>
+      ) : (
+        <div style={{ animation: "scaleIn 0.3s ease" }}>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", margin: "0 0 24px" }}>質問の内容を確認して回答してね</p>
+          <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={beginTurn} style={{ width: "auto", padding: "18px 48px", boxShadow: "0 4px 24px rgba(168,85,247,0.4)" }}>回答する</Btn>
+        </div>
+      )}
+    </div>
+  );
+
+  if (step === "answering") return (
+    <div style={{ animation: "slideUp 0.4s ease" }}>
+      <Card style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 11, color: "rgba(192,132,252,0.7)", fontWeight: 600, letterSpacing: "0.1em", marginBottom: 16 }}>{askerLabel}からの質問</div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 12px", lineHeight: 1.5 }}>{questionText}</h2>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>{askerLabel}の番号を選んでね</p>
+        <div style={{ display: "grid", gridTemplateColumns: targetCount <= 4 ? `repeat(${targetCount}, 1fr)` : `repeat(${Math.min(5, targetCount)}, 1fr)`, gap: 10 }}>
+          {Array.from({ length: targetCount }, (_, i) => i + 1).map((num) => {
+            const isSel = selectedNum === num; const isOth = answered && !isSel; const c = targetColor(num - 1);
+            return (
+              <button key={num} onClick={() => submitVote(num)} style={{ aspectRatio: "1", borderRadius: 16, cursor: answered ? "default" : "pointer", fontFamily: "inherit", fontSize: 20, fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s", background: isSel ? c : isOth ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.06)", border: isSel ? `2px solid ${c}` : "2px solid rgba(255,255,255,0.08)", opacity: isOth ? 0.3 : 1, transform: isSel ? "scale(1.05)" : "scale(1)", boxShadow: isSel ? `0 4px 20px ${c}66` : "none" }}>{num}</button>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+
+  if (step === "result") {
+    const voteCounts = {};
+    for (let i = 1; i <= targetCount; i++) voteCounts[i] = 0;
+    allVotes.forEach((v) => { if (voteCounts[v] !== undefined) voteCounts[v]++; });
+    const maxVotes = Math.max(...Object.values(voteCounts), 1);
+    return (
+      <div style={{ animation: "slideUp 0.5s ease" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, background: "linear-gradient(135deg,#c084fc,#f472b6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>結果発表</h2>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", margin: "8px 0 0" }}>{questionText}</p>
+        </div>
+        {!showResult && (
+          <div style={{ textAlign: "center", animation: "fadeIn 0.5s ease" }}>
+            <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setShowResult(true)} style={{ boxShadow: "0 4px 24px rgba(168,85,247,0.4)" }}>結果を見る</Btn>
+          </div>
+        )}
+        {showResult && (
+          <div style={{ animation: "scaleIn 0.5s ease" }}>
+            <Card>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {Array.from({ length: targetCount }, (_, i) => i + 1).map((num) => {
+                  const count = voteCounts[num]; const barPct = maxVotes > 0 ? (count / respCount) * 100 : 0; const c = targetColor(num - 1);
+                  return (
+                    <div key={num} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: count > 0 ? c : "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: count > 0 ? "#fff" : "rgba(255,255,255,0.3)", boxShadow: count > 0 ? `0 2px 12px ${c}44` : "none" }}>{num}</div>
+                      <div style={{ flex: 1 }}><div style={{ height: 28, borderRadius: 8, overflow: "hidden", background: "rgba(255,255,255,0.04)" }}><div style={{ height: "100%", borderRadius: 8, width: `${barPct}%`, background: count > 0 ? `linear-gradient(90deg, ${c}, ${c}bb)` : "transparent", transition: "width 1s ease", minWidth: count > 0 ? 2 : 0 }} /></div></div>
+                      <div style={{ fontSize: 16, fontWeight: 700, minWidth: 36, textAlign: "right", color: count > 0 ? "#fff" : "rgba(255,255,255,0.25)" }}>{count}人</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+            <Btn bg="rgba(255,255,255,0.06)" onClick={onBack} style={{ marginTop: 24, color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }}>トップに戻る</Btn>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
