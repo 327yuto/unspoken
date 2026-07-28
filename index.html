@@ -102,7 +102,7 @@ const Btn = ({ children, bg, onClick, disabled, style = {} }) => (
 const Card = ({ children, style = {} }) => (
   <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 20, padding: "28px 24px", border: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(20px)", ...style }}>{children}</div>
 );
-const RuleSheet = ({ accent, title, lead, steps, notes, minutes }) => (
+const RuleSheet = ({ accent, title, lead, steps, notes = [], minutes }) => (
   <Card>
     <div style={{ textAlign: "center", marginBottom: 18 }}>
       <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 6px" }}>{title}</h2>
@@ -117,14 +117,18 @@ const RuleSheet = ({ accent, title, lead, steps, notes, minutes }) => (
         </div>
       ))}
     </div>
-    <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", marginBottom: 12 }}>主催の人へ</div>
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {notes.map((n, i) => (
-        <div key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, paddingLeft: 14, position: "relative" }}>
-          <span style={{ position: "absolute", left: 0, color: accent }}>・</span>{n}
+    {notes.length > 0 && (
+      <>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", marginBottom: 12 }}>主催の人へ</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {notes.map((n, i) => (
+            <div key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, paddingLeft: 14, position: "relative" }}>
+              <span style={{ position: "absolute", left: 0, color: accent }}>・</span>{n}
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      </>
+    )}
     {minutes && <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 12, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>⏱ 目安 {minutes}</div>}
   </Card>
 );
@@ -569,7 +573,6 @@ function SecretFlow({ onBack }) {
 
   const SECRET_TEMPLATES = [
     "一番タイプなのは？",
-    "一番遊んでそうなのは？",
     "一番ギャップがありそうなのは？",
     "一番甘え上手そうなのは？",
     "付き合ったら一番楽しそうなのは？",
@@ -581,20 +584,14 @@ function SecretFlow({ onBack }) {
       <RuleSheet
         accent="#c084fc"
         title="SECRET"
-        lead="「一番◯◯なのは？」を、相手を番号で指名して匿名投票するゲーム。"
+        lead="誰が誰を選んだかはバレない！異性の1人に匿名投票するゲーム。"
         steps={[
-          "どちらのチームが質問するかを決める",
           "男性・女性それぞれの人数を決める",
-          "男女それぞれのチームで話し合って、相手チームに番号をつける",
-          "質問チームが質問を決める（回答チームは画面を見ない）",
-          "回答チームが1人ずつスマホを受け取り、番号を選んで投票",
-          "全員終わったら、番号ごとの得票数を発表！",
-        ]}
-        notes={[
-          "番号は自分のチーム内だけで共有してください。異性に知られると回答がバレます",
-          "投票中は質問チームに背を向けてもらってください",
-          "誰が何番かは覚えておく必要があります。決めたらチーム内で読み合わせを",
-          "結果は番号だけで発表されます。最後に「何番が誰か」を明かすと盛り上がります",
+          "どちらのチームが質問するかを決める",
+          "回答チームで話し合って、質問チーム全員に番号をつける（投票用の番号。順番に意味はない）",
+          "質問チームにスマホを渡して、質問を決める（回答チームは見ない）",
+          "1人ずつスマホを受け取り、番号を選んで投票",
+          "全員終わったら得票数を発表！何番が誰かは明かさない",
         ]}
         minutes="1問あたり 3〜5分"
       />
