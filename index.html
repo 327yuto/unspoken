@@ -578,10 +578,10 @@ function SecretFlow({ onBack }) {
       <RuleSheet
         accent="#c084fc"
         title="SECRET"
-        lead="誰が誰を選んだかはバレない！異性の1人に匿名投票するゲーム。"
+        lead="異性の1人に匿名投票するゲーム。"
         steps={[
-          "どちらのチームが質問するかを決める",
-          "回答チームで話し合って、質問チーム全員に番号をつける（投票用の番号。順番に意味はない）",
+          "「質問チーム」「回答チーム」を決める",
+          "回答チームで話し合って、質問チーム全員に番号をつける（投票用の番号）",
           "質問チームにスマホを渡して、質問を決める（回答チームは見ない）",
           "1人ずつスマホを受け取り、番号を選んで投票",
           "全員終わったら得票数を発表！何番が誰かは明かさない",
@@ -591,7 +591,7 @@ function SecretFlow({ onBack }) {
       <Card style={{ marginTop: 12, padding: "18px 20px" }}>
         <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,71,87,0.08)", border: "1px solid rgba(255,71,87,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}><span style={{ fontSize: 16 }}>⚠️</span><span style={{ fontSize: 13, fontWeight: 700, color: "#ff6b81" }}>大事なルール</span></div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>回答者は<span style={{ color: "#ff6b81", fontWeight: 700 }}>異性にバレないように</span>番号を確認してね！<br />誰が何番か知られたら、回答がバレちゃうよ</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>番号は<span style={{ color: "#ff6b81", fontWeight: 700 }}>席順など、推測できる並びにしないこと</span></div>
         </div>
       </Card>
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
