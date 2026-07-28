@@ -429,7 +429,8 @@ function SeatFlow({ onBack }) {
         <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>{questions.map((_, i) => (<div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= curQ ? "linear-gradient(90deg,#ff6b81,#ff9a76)" : "rgba(255,255,255,0.1)" }} />))}</div>
         <Card style={{ textAlign: "center" }}>
           <div style={{ fontSize: 11, color: "rgba(255,107,129,0.7)", fontWeight: 600, letterSpacing: "0.15em", marginBottom: 16, textTransform: "uppercase" }}>Q{curQ + 1} / {questions.length}</div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 32px", lineHeight: 1.5 }}>{q.text}</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px", lineHeight: 1.5 }}>{q.text}</h2>
+          <p style={{ fontSize: 12, color: "rgba(255,71,87,0.7)", margin: "0 0 28px", fontWeight: 600 }}>⚠️ 他の人に画面を見せないで！</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {["A", "B"].map((opt) => {
               const label = opt === "A" ? q.optionA : q.optionB;
