@@ -475,7 +475,7 @@ function SeatFlow({ onBack }) {
           </div>
         );
       })}
-      {showAgg && <div style={{ marginTop: 20 }}>{aggQ < questions.length - 1 ? <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={() => setAggQ(aggQ + 1)}>次の結果 →</Btn> : <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={goPairs} style={{ boxShadow: "0 4px 24px rgba(255,71,87,0.4)" }}>♥ ペア発表 ♥</Btn>}</div>}
+      {showAgg && <div style={{ marginTop: 20 }}>{aggQ < questions.length - 1 ? <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={() => setAggQ(aggQ + 1)}>次の結果 →</Btn> : <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={goPairs} style={{ boxShadow: "0 4px 24px rgba(255,71,87,0.4)" }}>ペア発表へ</Btn>}</div>}
     </div>
   );
 
@@ -488,7 +488,7 @@ function SeatFlow({ onBack }) {
     return (
       <div style={{ animation: "slideUp 0.5s ease" }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, background: "linear-gradient(135deg,#ff6b81,#ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>♥ ペア発表</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, background: "linear-gradient(135deg,#ff6b81,#ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>ペア発表</h2>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "4px 0 0" }}>相性で決まったペアは…？</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -496,16 +496,12 @@ function SeatFlow({ onBack }) {
             const vis = i <= revealedPair;
             const mP = { g: "M", num: p.mIdx + 1 }; const fP = { g: "F", num: p.fIdx + 1 };
             const mC = personColor(mP); const fC = personColor(fP);
-            const matchPct = questions.length > 0 ? Math.round((p.score / questions.length) * 100) : 0;
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, background: vis ? "rgba(255,255,255,0.04)" : "transparent", borderRadius: 18, padding: "20px", border: vis ? "1px solid rgba(255,255,255,0.08)" : "1px solid transparent", animation: vis ? "seatReveal 0.8s ease forwards" : "none", opacity: vis ? 1 : 0 }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                   <div style={{ width: 52, height: 52, borderRadius: "50%", background: mC, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, boxShadow: `0 4px 16px ${mC}55` }}>男性{mP.num}</div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                  <div style={{ fontSize: 24 }}>♥</div>
-                  {matchPct > 0 && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>{matchPct}%</div>}
-                </div>
+                <div style={{ width: 28, height: 1, background: "rgba(255,255,255,0.25)" }} />
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                   <div style={{ width: 52, height: 52, borderRadius: "50%", background: fC, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, boxShadow: `0 4px 16px ${fC}55` }}>女性{fP.num}</div>
                 </div>
@@ -525,7 +521,7 @@ function SeatFlow({ onBack }) {
         {allRevealed && (
           <div style={{ marginTop: 24, textAlign: "center", animation: "fadeIn 0.8s ease" }}>
             <div style={{ background: "rgba(255,107,129,0.06)", border: "1px solid rgba(255,107,129,0.12)", borderRadius: 16, padding: "18px 20px" }}>
-              <div style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>ペアになった人同士で<br /><span style={{ color: "#ff8a9e", fontWeight: 600 }}>お互いの回答についてお話してみよう ♥</span></div>
+              <div style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>ペアになった人同士で<br /><span style={{ color: "#ff8a9e", fontWeight: 600 }}>お互いの回答について話してみてください</span></div>
             </div>
             <Btn bg="rgba(255,255,255,0.06)" onClick={onBack} style={{ marginTop: 16, color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }}>トップに戻る</Btn>
           </div>
