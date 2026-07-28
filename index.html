@@ -552,6 +552,8 @@ function SecretFlow({ onBack }) {
   const targetLabel = askerLabel;
   const respColor = (idx) => asker === "male" ? COLORS_F[idx % COLORS_F.length] : COLORS_M[idx % COLORS_M.length];
   const targetColor = (idx) => asker === "male" ? COLORS_M[idx % COLORS_M.length] : COLORS_F[idx % COLORS_F.length];
+  const respTeamColor = asker === "male" ? "#ff6b81" : "#5f7cff";
+  const respIcon = asker === "male" ? "♀" : "♂";
 
   const startAnswering = () => { setAllVotes([]); setCurPerson(0); setNumRevealed(false); setAnswered(false); setSelectedNum(null); setStep("shownum"); };
   const beginTurn = () => { setAnswered(false); setSelectedNum(null); setStep("answering"); };
@@ -604,7 +606,7 @@ function SecretFlow({ onBack }) {
       </Card>
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
         <Btn bg="rgba(255,255,255,0.08)" onClick={onBack} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
-        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("role")} style={{ flex: 2 }}>OK！はじめる</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("count")} style={{ flex: 2 }}>OK！はじめる</Btn>
       </div>
     </div>
   );
@@ -625,8 +627,8 @@ function SecretFlow({ onBack }) {
         </div>
       </Card>
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("rules")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
-        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("count")} style={{ flex: 2 }}>次へ</Btn>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("count")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("assign")} style={{ flex: 2 }}>次へ → 番号決め</Btn>
       </div>
     </div>
   );
@@ -641,8 +643,8 @@ function SecretFlow({ onBack }) {
         </div>
       </Card>
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("role")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
-        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("assign")} style={{ flex: 2 }}>次へ → 番号決め</Btn>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("rules")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("role")} style={{ flex: 2 }}>次へ → 役割決め</Btn>
       </div>
     </div>
   );
@@ -650,21 +652,27 @@ function SecretFlow({ onBack }) {
   if (step === "assign") return (
     <div style={{ animation: "slideUp 0.5s ease" }}>
       <Card style={{ textAlign: "center" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 20px" }}>番号を決めよう！</h2>
-        <div style={{ background: "rgba(95,124,255,0.08)", border: "1px solid rgba(95,124,255,0.2)", borderRadius: 14, padding: "16px", marginBottom: 12 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#5f7cff", marginBottom: 8 }}>♂ 男性チーム</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>男性同士で話し合って<br /><span style={{ fontWeight: 700, color: "#fff" }}>女性に 1〜{fCount} の番号</span>をつけてね</div>
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 4px" }}>番号を決めよう！</h2>
+        <p style={{ fontSize: 12, color: "rgba(255,71,87,0.7)", margin: "0 0 20px", fontWeight: 600 }}>⚠️ {askerLabel}は画面を見ないで！</p>
+        <div style={{ background: `${respTeamColor}14`, border: `1px solid ${respTeamColor}33`, borderRadius: 14, padding: "16px", marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: respTeamColor, marginBottom: 8 }}>{respIcon} {respLabel}チーム</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{respLabel}同士で話し合って<br /><span style={{ fontWeight: 700, color: "#fff" }}>{askerLabel}に 1〜{targetCount} の番号</span>をつけてね</div>
         </div>
-        <div style={{ background: "rgba(255,107,129,0.08)", border: "1px solid rgba(255,107,129,0.2)", borderRadius: 14, padding: "16px", marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#ff6b81", marginBottom: 8 }}>♀ 女性チーム</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>女性同士で話し合って<br /><span style={{ fontWeight: 700, color: "#fff" }}>男性に 1〜{mCount} の番号</span>をつけてね</div>
-        </div>
-        <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", fontSize: 12, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>⚠️ 番号は異性には秘密！<br />自分たちのチーム内だけで共有してね</div>
+        <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", fontSize: 12, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>⚠️ 番号は{askerLabel}には秘密！<br />投票する{respLabel}だけで共有してね</div>
       </Card>
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("count")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
-        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("question")} style={{ flex: 2 }}>全員決まった！</Btn>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("role")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("toAsker")} style={{ flex: 2 }}>決まった！</Btn>
       </div>
+    </div>
+  );
+
+  if (step === "toAsker") return (
+    <div style={{ animation: "scaleIn 0.5s ease", textAlign: "center", padding: "48px 20px" }}>
+      <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 28px", background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, animation: "pulseGlow 2.5s ease-in-out infinite" }}>📱</div>
+      <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px" }}>{askerLabel}にスマホを渡してね</h2>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 28px" }}>{askerLabel}が質問を決めます</p>
+      <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setStep("question")} style={{ width: "auto", padding: "18px 48px", boxShadow: "0 4px 24px rgba(168,85,247,0.4)" }}>受け取った</Btn>
     </div>
   );
 
@@ -684,7 +692,7 @@ function SecretFlow({ onBack }) {
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", lineHeight: 1.6, padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>{respLabel}は {askerLabel}の番号（1〜{targetCount}）から1つ選んで回答します</div>
       </Card>
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("assign")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
+        <Btn bg="rgba(255,255,255,0.08)" onClick={() => setStep("toAsker")} style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>← 戻る</Btn>
         <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={startAnswering} disabled={!questionText.trim()} style={{ flex: 2 }}>{respLabel}の回答スタート</Btn>
       </div>
     </div>
@@ -756,6 +764,9 @@ function SecretFlow({ onBack }) {
         </div>
         {!showResult && (
           <div style={{ textAlign: "center", animation: "fadeIn 0.5s ease" }}>
+            <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 24px", background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, animation: "pulseGlow 2.5s ease-in-out infinite" }}>📱</div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 8px" }}>主催の人にスマホを渡してね</h3>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 28px", lineHeight: 1.7 }}>ここからは全員で見てOK！<br />みんなが集まったら結果を開こう</p>
             <Btn bg="linear-gradient(135deg,#c084fc,#a855f7)" onClick={() => setShowResult(true)} style={{ boxShadow: "0 4px 24px rgba(168,85,247,0.4)" }}>結果を見る</Btn>
           </div>
         )}
