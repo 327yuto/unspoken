@@ -36,18 +36,30 @@ const { useState, useEffect } = React;
 const COLORS_M = ["#5f7cff","#38bdf8","#45d9a8","#a3e635","#ffc048"];
 const COLORS_F = ["#ff6b81","#f472b6","#c084fc","#ff8a5c","#fb923c"];
 
+// set は QUESTION_SETS の key。セットに入れない質問は省略する。
+// 並べ替えても挿入しても、セットの中身はこのタグから導出されるのでずれない。
 const PRESET_QUESTIONS = [
-  { text: "デートするなら？", optionA: "インドア", optionB: "アウトドア" },
-  { text: "恋人との連絡頻度は？", optionA: "毎日こまめに", optionB: "用がある時だけ" },
-  { text: "好きになるきっかけは？", optionA: "見た目", optionB: "性格" },
-  { text: "告白するなら？", optionA: "自分から", optionB: "されたい" },
-  { text: "恋人に求めるのは？", optionA: "安心感", optionB: "ドキドキ" },
-  { text: "ケンカしたら？", optionA: "すぐ話し合う", optionB: "距離を置く" },
-  { text: "理想の休日は？", optionA: "早起きして活動", optionB: "昼まで寝る" },
-  { text: "記念日は？", optionA: "お祝いしたい", optionB: "気にしない" },
-  { text: "恋愛で大事なのは？", optionA: "フィーリング", optionB: "価値観" },
-  { text: "好きなタイプは？", optionA: "甘えてくる人", optionB: "引っ張ってくれる人" },
+  { text: "デートするなら？", optionA: "相手の行きたい場所", optionB: "自分の行きたい場所", matchMode: "opposite", set: "diff" },
+  { text: "恋人との連絡頻度は？", optionA: "毎日こまめに", optionB: "用がある時だけ", matchMode: "same", set: "match" },
+  { text: "好きになるきっかけは？", optionA: "見た目", optionB: "性格", matchMode: "same" },
+  { text: "告白するなら？", optionA: "自分からする", optionB: "告白されたい", matchMode: "opposite", set: "diff" },
+  { text: "恋人に求めるのは？", optionA: "安心感", optionB: "ドキドキ", matchMode: "same" },
+  { text: "ケンカしたら？", optionA: "すぐ話し合う", optionB: "我慢する", matchMode: "same" },
+  { text: "理想の休日は？", optionA: "早起きして活動", optionB: "昼まで寝る", matchMode: "same", set: "match" },
+  { text: "記念日は？", optionA: "お祝いしたい", optionB: "気にしない", matchMode: "same", set: "match" },
+  { text: "恋愛で大事なのは？", optionA: "フィーリング", optionB: "価値観", matchMode: "same" },
+  { text: "好きなタイプは？", optionA: "甘えてくる人", optionB: "引っ張ってくれる人", matchMode: "opposite", set: "diff" },
+  { text: "サプライズは？", optionA: "する側がいい", optionB: "される側がいい", matchMode: "opposite", set: "lead" },
+  { text: "悩みごとは？", optionA: "聞いてほしい", optionB: "聞いてあげたい", matchMode: "opposite", set: "lead" },
+  { text: "デートの計画は？", optionA: "自分が立てたい", optionB: "任せたい", matchMode: "opposite", set: "lead" },
+  { text: "飼うなら？", optionA: "犬", optionB: "猫", matchMode: "same" },
 ];
+
+const QUESTION_SETS = [
+  { key: "match", icon: "🤝", name: "価値観が合うとペア", desc: "同じ回答どうしでペアになる", color: "#ff6b81" },
+  { key: "diff", icon: "🔀", name: "タイプが違うとペア", desc: "違う回答どうしでペアになる", color: "#ff9a76" },
+  { key: "lead", icon: "🔀", name: "リード役が違うとペア", desc: "違う回答どうしでペアになる", color: "#ffc8a2" },
+].map((s) => ({ ...s, idx: PRESET_QUESTIONS.flatMap((q, i) => (q.set === s.key ? [i] : [])) }));
 
 function buildPairs(mAnswers, fAnswers, questions) {
   const mN = mAnswers.length, fN = fAnswers.length;
@@ -215,8 +227,15 @@ function SeatFlow({ onBack }) {
     setPresetSelected(ns);
     if (ns.size > 0) setJustToggled(true);
   };
+  const toggleSet = (idx) => {
+    const ns = new Set(presetSelected);
+    const allOn = idx.every((i) => ns.has(i));
+    idx.forEach((i) => { if (allOn) ns.delete(i); else ns.add(i); });
+    setPresetSelected(ns);
+    if (ns.size > 0) setJustToggled(true);
+  };
   const autoApplyPresets = () => {
-    const picked = [...presetSelected].sort((a, b) => a - b).map((i) => ({ ...PRESET_QUESTIONS[i], matchMode: "same" }));
+    const picked = [...presetSelected].sort((a, b) => a - b).map((i) => ({ ...PRESET_QUESTIONS[i], matchMode: PRESET_QUESTIONS[i].matchMode || "same" }));
     const customs = customPicks.filter((q) => q.text.trim() && q.optionA.trim() && q.optionB.trim());
     setQuestions([...picked, ...customs]);
     setJustToggled(false);
@@ -317,7 +336,24 @@ function SeatFlow({ onBack }) {
     <div style={{ animation: "slideUp 0.5s ease" }}>
       <Card>
         <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px" }}>質問を選ぼう</h2>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 20px" }}>使いたい質問をタップ！</p>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 20px" }}>セットでまとめて選ぶか、1問ずつタップ！</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
+          {QUESTION_SETS.map((s, si) => {
+            const on = s.idx.length > 0 && s.idx.every((i) => presetSelected.has(i));
+            return (
+              <button key={si} onClick={() => toggleSet(s.idx)} style={{ padding: "14px 16px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", color: "#fff", transition: "all 0.2s", background: on ? `${s.color}26` : "rgba(255,255,255,0.03)", border: on ? `1.5px solid ${s.color}88` : "1.5px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3 }}>{s.icon} {s.name}</div>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{s.desc}{s.idx.length}問</div>
+                  </div>
+                  {on && <div style={{ color: s.color, fontSize: 18, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>✓</div>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.1em", marginBottom: 10 }}>1問ずつ選ぶ</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {PRESET_QUESTIONS.map((q, i) => {
             const on = presetSelected.has(i);
