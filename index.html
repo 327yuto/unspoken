@@ -217,7 +217,6 @@ function SeatFlow({ onBack, onActive }) {
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
   const [showAgg, setShowAgg] = useState(false);
-  const [aggQ, setAggQ] = useState(-1);
   const [pairs, setPairs] = useState([]);
   const [revealedPair, setRevealedPair] = useState(-1);
   const [presetSelected, setPresetSelected] = useState(new Set());
@@ -288,13 +287,13 @@ function SeatFlow({ onBack, onActive }) {
         else {
           const mA = []; for (let i = 1; i <= mCount; i++) mA.push(newAll[`M${i}`] || []);
           const fA = []; for (let i = 1; i <= fCount; i++) fA.push(newAll[`F${i}`] || []);
-          onActive(false); setPairs(buildPairs(mA, fA, questions)); setStep("aggregate"); setAggQ(-1); setShowAgg(false);
+          onActive(false); setPairs(buildPairs(mA, fA, questions)); setStep("aggregate"); setShowAgg(false);
         }
       }
     }, 500);
   };
 
-  useEffect(() => { if (step === "aggregate" && !showAgg) { const t = setTimeout(() => { setShowAgg(true); setAggQ(0); }, 800); return () => clearTimeout(t); } }, [step, showAgg]);
+  useEffect(() => { if (step === "aggregate" && !showAgg) { const t = setTimeout(() => setShowAgg(true), 800); return () => clearTimeout(t); } }, [step, showAgg]);
   const goPairs = () => { setStep("pairs"); setRevealedPair(-1); setTimeout(() => setRevealedPair(0), 800); };
   useEffect(() => { if (step === "pairs" && revealedPair >= 0 && revealedPair < pairs.length - 1) { const t = setTimeout(() => setRevealedPair(revealedPair + 1), 1500); return () => clearTimeout(t); } }, [revealedPair, step]);
   const reset = () => { setStep("rules"); setMCount(2); setFCount(2); setQuestions([]); setAllAnswers({}); setPairs([]); setPresetSelected(new Set()); setCustomPicks([{ text: "", optionA: "", optionB: "", matchMode: "same" }]); };
@@ -492,9 +491,11 @@ function SeatFlow({ onBack, onActive }) {
 
   if (step === "aggregate") return (
     <div style={{ animation: "slideUp 0.5s ease" }}>
-      <div style={{ textAlign: "center", marginBottom: 24 }}><h2 style={{ fontSize: 20, fontWeight: 700, background: "linear-gradient(135deg,#ff6b81,#ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>集計結果</h2></div>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, background: "linear-gradient(135deg,#ff6b81,#ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>集計結果</h2>
+        {questions.length > 1 && <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "6px 0 0" }}>全{questions.length}問ぶん</p>}
+      </div>
       {showAgg && questions.map((q, qi) => {
-        if (qi > aggQ) return null;
         const allArr = orderList.map((p) => allAnswers[personKey(p)] || []);
         const totalA = allArr.filter((a) => a[qi] === "A").length;
         const totalB = allArr.filter((a) => a[qi] === "B").length;
@@ -502,7 +503,7 @@ function SeatFlow({ onBack, onActive }) {
         const pA = t > 0 ? Math.round((totalA / t) * 100) : 0; const pB = 100 - pA;
         const modeLabel = q.matchMode === "opposite" ? "🔀 違う回答でペア" : "🤝 同じ回答でペア";
         return (
-          <div key={qi} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: "20px", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 12, animation: "scaleIn 0.5s ease" }}>
+          <div key={qi} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: "20px", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 12, animation: "scaleIn 0.5s ease both", animationDelay: `${qi * 0.08}s` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span style={{ fontSize: 11, color: "rgba(255,107,129,0.7)", fontWeight: 600 }}>Q{qi + 1}</span>
               <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: 6 }}>{modeLabel}</span>
@@ -519,7 +520,7 @@ function SeatFlow({ onBack, onActive }) {
           </div>
         );
       })}
-      {showAgg && <div style={{ marginTop: 20 }}>{aggQ < questions.length - 1 ? <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={() => setAggQ(aggQ + 1)}>次の結果 →</Btn> : <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={goPairs} style={{ boxShadow: "0 4px 24px rgba(255,71,87,0.4)" }}>ペア発表へ</Btn>}</div>}
+      {showAgg && <div style={{ marginTop: 20 }}><Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={goPairs} style={{ boxShadow: "0 4px 24px rgba(255,71,87,0.4)" }}>ペア発表へ</Btn></div>}
     </div>
   );
 
