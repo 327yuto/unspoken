@@ -293,7 +293,6 @@ function SeatFlow({ onBack, onActive }) {
     }, 500);
   };
 
-  useEffect(() => { if (step === "aggregate" && !showAgg) { const t = setTimeout(() => setShowAgg(true), 800); return () => clearTimeout(t); } }, [step, showAgg]);
   const goPairs = () => { setStep("pairs"); setRevealedPair(-1); setTimeout(() => setRevealedPair(0), 800); };
   useEffect(() => { if (step === "pairs" && revealedPair >= 0 && revealedPair < pairs.length - 1) { const t = setTimeout(() => setRevealedPair(revealedPair + 1), 1500); return () => clearTimeout(t); } }, [revealedPair, step]);
   const reset = () => { setStep("rules"); setMCount(2); setFCount(2); setQuestions([]); setAllAnswers({}); setPairs([]); setPresetSelected(new Set()); setCustomPicks([{ text: "", optionA: "", optionB: "", matchMode: "same" }]); };
@@ -495,6 +494,14 @@ function SeatFlow({ onBack, onActive }) {
         <h2 style={{ fontSize: 20, fontWeight: 700, background: "linear-gradient(135deg,#ff6b81,#ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>集計結果</h2>
         {questions.length > 1 && <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "6px 0 0" }}>全{questions.length}問ぶん</p>}
       </div>
+      {!showAgg && (
+        <div style={{ textAlign: "center", animation: "fadeIn 0.5s ease" }}>
+          <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 24px", background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, animation: "pulseGlow 2.5s ease-in-out infinite" }}>📱</div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 8px" }}>主催の人にスマホを渡してね</h3>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 28px", lineHeight: 1.7 }}>ここからは全員で見てOK！<br />みんなが集まったら結果を開こう</p>
+          <Btn bg="linear-gradient(135deg,#ff6b81,#ff4757)" onClick={() => setShowAgg(true)} style={{ boxShadow: "0 4px 24px rgba(255,71,87,0.4)" }}>結果を見る</Btn>
+        </div>
+      )}
       {showAgg && questions.map((q, qi) => {
         const allArr = orderList.map((p) => allAnswers[personKey(p)] || []);
         const totalA = allArr.filter((a) => a[qi] === "A").length;
