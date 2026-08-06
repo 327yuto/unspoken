@@ -663,7 +663,7 @@ function SecretFlow({ onBack, onActive }) {
     <div style={{ animation: "slideUp 0.5s ease" }}>
       <Card style={{ textAlign: "center" }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px" }}>質問を作るのはどっち？</h2>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 24px" }}>質問側が相手の番号を選ばせるよ</p>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 24px" }}>回答チームが、質問チームの番号を選んで投票します</p>
         <div style={{ display: "flex", gap: 10 }}>
           {[{ val: "male", icon: "♂", label: "男性が質問", sub: "女性が回答", c: "#5f7cff" }, { val: "female", icon: "♀", label: "女性が質問", sub: "男性が回答", c: "#f472b6" }].map((r) => (
             <button key={r.val} onClick={() => setAsker(r.val)} style={{ flex: 1, padding: "20px 12px", borderRadius: 16, cursor: "pointer", fontFamily: "inherit", textAlign: "center", color: "#fff", background: asker === r.val ? `${r.c}22` : "rgba(255,255,255,0.03)", border: asker === r.val ? `2px solid ${r.c}88` : "2px solid rgba(255,255,255,0.06)", transition: "all 0.2s" }}>
