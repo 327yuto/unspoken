@@ -161,13 +161,23 @@ const Counter = ({ value, onChange, min = 1, max = 10, label }) => (
 
 function App() {
   const [mode, setMode] = useState(null);
+  // 回答が始まったら true。ロゴから抜けるときに確認するかの判定に使う
+  const [started, setStarted] = useState(false);
+  // 画面内のボタンから戻る場合は意図が明確なので確認しない
+  const exitToTop = () => { setStarted(false); setMode(null); };
+  // ロゴは誤タップしうるので、消えるものがあるときだけ確認する
+  const logoToTop = () => {
+    if (mode === null) return;
+    if (started && !window.confirm("最初からやり直しますか？\nここまでの回答は消えます")) return;
+    exitToTop();
+  };
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #1a0a1e 0%, #2d1038 30%, #1a0825 60%, #0d0515 100%)", color: "#fff", fontFamily: "'Helvetica Neue','Hiragino Sans','Yu Gothic UI',sans-serif", position: "relative", overflow: "hidden" }}>
       <Hearts count={mode === null ? 12 : 8} />
       <div style={{ maxWidth: 440, margin: "0 auto", padding: "20px 20px 40px", position: "relative", zIndex: 1 }}>
-        <div style={{ textAlign: "center", padding: "24px 0 16px", animation: "fadeIn 0.6s ease" }}>
+        <div onClick={logoToTop} style={{ textAlign: "center", padding: "24px 0 16px", animation: "fadeIn 0.6s ease", cursor: mode === null ? "default" : "pointer" }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, background: "linear-gradient(135deg, #ff6b81, #ff9a76, #ffc8a2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "0.12em" }}>UNSPOKEN</h1>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: "6px 0 0", letterSpacing: "0.12em" }}>between the lines</p>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: "6px 0 0", letterSpacing: "0.12em" }}>{mode === null ? "between the lines" : "タップでトップへ"}</p>
         </div>
         {mode === null && (
           <div style={{ animation: "slideUp 0.5s ease", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -182,8 +192,8 @@ function App() {
             ))}
           </div>
         )}
-        {mode === "seat" && <SeatFlow onBack={() => setMode(null)} />}
-        {mode === "secret" && <SecretFlow onBack={() => setMode(null)} />}
+        {mode === "seat" && <SeatFlow onBack={exitToTop} onActive={setStarted} />}
+        {mode === "secret" && <SecretFlow onBack={exitToTop} onActive={setStarted} />}
         {mode === null && (
           <div style={{ textAlign: "center", marginTop: 40, paddingTop: 16 }}>
             <a href="https://github.com/327yuto" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", textDecoration: "none", letterSpacing: "0.05em" }}>by @327yuto</a>
@@ -194,7 +204,7 @@ function App() {
   );
 }
 
-function SeatFlow({ onBack }) {
+function SeatFlow({ onBack, onActive }) {
   const [step, setStep] = useState("rules");
   const [mCount, setMCount] = useState(2);
   const [fCount, setFCount] = useState(2);
@@ -262,7 +272,7 @@ function SeatFlow({ onBack }) {
     for (let i = 1; i <= fCount; i++) ol.push({ g: "F", num: i });
     setOrderList(ol); setAllAnswers({}); setCurIdx(0); setCurAnswers([]); setCurQ(0); setStep("assign");
   };
-  const startAnswering = () => { setCurIdx(0); setCurQ(0); setCurAnswers([]); setAnswered(false); setSelected(null); setStep("callup"); };
+  const startAnswering = () => { onActive(true); setCurIdx(0); setCurQ(0); setCurAnswers([]); setAnswered(false); setSelected(null); setStep("callup"); };
   const beginTurn = () => { setCurQ(0); setCurAnswers([]); setAnswered(false); setSelected(null); setStep("answering"); };
 
   const choose = (opt) => {
@@ -278,7 +288,7 @@ function SeatFlow({ onBack }) {
         else {
           const mA = []; for (let i = 1; i <= mCount; i++) mA.push(newAll[`M${i}`] || []);
           const fA = []; for (let i = 1; i <= fCount; i++) fA.push(newAll[`F${i}`] || []);
-          setPairs(buildPairs(mA, fA, questions)); setStep("aggregate"); setAggQ(-1); setShowAgg(false);
+          onActive(false); setPairs(buildPairs(mA, fA, questions)); setStep("aggregate"); setAggQ(-1); setShowAgg(false);
         }
       }
     }, 500);
@@ -566,7 +576,7 @@ function SeatFlow({ onBack }) {
   return null;
 }
 
-function SecretFlow({ onBack }) {
+function SecretFlow({ onBack, onActive }) {
   const [step, setStep] = useState("rules");
   const [asker, setAsker] = useState("male");
   const [mCount, setMCount] = useState(3);
@@ -589,7 +599,7 @@ function SecretFlow({ onBack }) {
   const respTeamColor = asker === "male" ? "#ff6b81" : "#5f7cff";
   const respIcon = asker === "male" ? "♀" : "♂";
 
-  const startAnswering = () => { setAllVotes([]); setCurPerson(0); setNumRevealed(false); setAnswered(false); setSelectedNum(null); setStep("shownum"); };
+  const startAnswering = () => { onActive(true); setAllVotes([]); setCurPerson(0); setNumRevealed(false); setAnswered(false); setSelectedNum(null); setStep("shownum"); };
   const beginTurn = () => { setAnswered(false); setSelectedNum(null); setStep("answering"); };
   const submitVote = (num) => {
     if (answered) return;
@@ -597,7 +607,7 @@ function SecretFlow({ onBack }) {
     setTimeout(() => {
       const nv = [...allVotes, num]; setAllVotes(nv);
       if (curPerson < respCount - 1) { setCurPerson(curPerson + 1); setNumRevealed(false); setAnswered(false); setSelectedNum(null); setStep("handoff"); }
-      else { setStep("result"); setShowResult(false); }
+      else { onActive(false); setStep("result"); setShowResult(false); }
     }, 600);
   };
 
