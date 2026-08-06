@@ -472,17 +472,21 @@ function SeatFlow({ onBack, onActive }) {
           <div style={{ fontSize: 11, color: "rgba(255,107,129,0.7)", fontWeight: 600, letterSpacing: "0.15em", marginBottom: 16, textTransform: "uppercase" }}>Q{curQ + 1} / {questions.length}</div>
           <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px", lineHeight: 1.5 }}>{q.text}</h2>
           <p style={{ fontSize: 12, color: "rgba(255,71,87,0.7)", margin: "0 0 28px", fontWeight: 600 }}>⚠️ 他の人に画面を見せないで！</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {["A", "B"].map((opt) => {
-              const label = opt === "A" ? q.optionA : q.optionB;
-              const isSel = selected === opt; const isOth = answered && !isSel;
-              return (
-                <button key={opt} onClick={() => choose(opt)} style={{ padding: "20px 24px", background: isSel ? "linear-gradient(135deg,#ff6b81,#ff4757)" : isOth ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.06)", border: isSel ? "2px solid rgba(255,107,129,0.8)" : "2px solid rgba(255,255,255,0.08)", borderRadius: 16, color: isOth ? "rgba(255,255,255,0.3)" : "#fff", fontSize: 16, fontWeight: isSel ? 700 : 500, cursor: answered ? "default" : "pointer", fontFamily: "inherit", transition: "all 0.3s", animation: isSel ? "optionPop 0.3s ease" : "none", transform: isSel ? "scale(1.02)" : "scale(1)", boxShadow: isSel ? "0 4px 24px rgba(255,71,87,0.3)" : "none" }}>
-                  <span style={{ opacity: 0.5, marginRight: 8 }}>{opt}.</span>{label}
+          {answered ? (
+            <div style={{ animation: "scaleIn 0.25s ease", padding: "20px 0" }}>
+              <div style={{ width: 72, height: 72, borderRadius: "50%", margin: "0 auto 16px", background: "rgba(255,107,129,0.15)", border: "2px solid rgba(255,107,129,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>✓</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>回答を受け付けました</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 6 }}>個人の回答は誰にも表示されません</div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {["A", "B"].map((opt) => (
+                <button key={opt} onClick={() => choose(opt)} style={{ padding: "20px 24px", background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.08)", borderRadius: 16, color: "#fff", fontSize: 16, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
+                  <span style={{ opacity: 0.5, marginRight: 8 }}>{opt}.</span>{opt === "A" ? q.optionA : q.optionB}
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     );
